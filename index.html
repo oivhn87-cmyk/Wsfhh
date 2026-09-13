@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>テキストからAI動画生成</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            text-align: center;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        textarea {
+            width: 90%;
+            height: 80px;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            resize: none;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        #loading {
+            display: none;
+            margin-top: 20px;
+            color: #e67e22;
+            font-weight: bold;
+        }
+        video {
+            margin-top: 20px;
+            max-width: 100%;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>テキストからAI動画生成</h2>
+        <p>作りたい動画の様子を英語のプロンプトで入力してください（例: A cat is running on the grass）</p>
+        
+        <textarea id="promptInput" placeholder="A cat is running on the grass..."></textarea><br>
+        <button onclick="generateVideo()">動画を生成する</button>
+
+        <div id="loading">AIがテキストから動画を生成中です... (これには数分かかります)</div>
+        
+        <div>
+            <video id="resultVideo" controls style="display: none;"></video>
+        </div>
+    </div>
+
+    <script>
+        async function generateVideo() {
+            const promptText = document.getElementById('promptInput').value;
+            const loadingDiv = document.getElementById('loading');
+            const videoElement = document.getElementById('resultVideo');
+
+            if (!promptText.trim()) {
+                alert('プロンプトを入力してください。');
+                return;
+            }
+
+            loadingDiv.style.display = 'block';
+            videoElement.style.display = 'none';
+
+            try {
+                // FastAPIサーバーへJSON形式で送信
+                const response = await fetch('http://127.0.0.1:8000/generate-text-video/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ prompt: promptText })
+                });
+
+                if (!response.ok) {
+                    throw new Error('動画の生成に失敗しました。');
+                }
+
+                // 返却された動画をプレビュー表示
+                const blob = await response.blob();
+                const videoUrl = URL.createObjectURL(blob);
+                
+                videoElement.src = videoUrl;
+                videoElement.style.display = 'block';
+            } catch (error) {
+                alert('エラーが発生しました: ' + error.message);
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+    </script>
+
+</body>
+</html>
